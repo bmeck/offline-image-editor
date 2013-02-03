@@ -26,17 +26,26 @@ html, body {
 #gallery-dialog {
   max-width: 80%;
 }
-#gallery-nav>input {
-  -webkit-flex-wrap: wrap;
+#gallery-nav>span {
+  display: inline-block;
+}
+#gallery-nav>span>input {
   display: none;
 }
-#gallery-nav>input:checked+label {
+#gallery-nav>span>label {
+  display: block;
+}
+#gallery-nav>span>input:checked+label>img {
   border: 0.1em solid;
 }
-#gallery-nav>label>img {
+#gallery-nav>span>input+label:after {
+  display: block;
+  text-align: center;
+  content: attr(title);
+}
+#gallery-nav>span>label>img {
   margin: 0.5em;
   max-height: 7em;
-  display: inline-block;
 }
 body:not(.online) .online {
   display: none !important;

@@ -988,13 +988,16 @@ module.exports = {
                   radio.click();
                   first = false;
                }
+               var container = document.createElement('span');
+               nav.appendChild(container);
                new img(file).read(function (err, data) {
                   var label = document.createElement('label');
+                  label.title = file;
                   label.setAttribute('for', id);
                   var image = document.createElement('img');
                   image.onload = function () {
-                     nav.appendChild(radio);
-                     nav.appendChild(label);
+                     container.appendChild(radio);
+                     container.appendChild(label);
                      next();
                   }
                   image.onerror = function () {}
