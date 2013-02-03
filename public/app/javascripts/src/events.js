@@ -95,9 +95,11 @@ module.exports = {
                index++;
             },
             openDialog('gallery-dialog', function (data, form) {
-               new img(form.querySelector('input:checked').value).read(function (err, data) {
+               var filename = form.querySelector('input:checked').value;
+               new img(filename).read(function (err, data) {
                   var image = new Image();
                   image.onload = function () {
+                     document.getElementById('save-name').value = filename;
                      newCanvas(image.naturalWidth, image.naturalHeight);
                      var c = document.getElementById('c');
                      c.getContext('2d').drawImage(image, 0, 0);
