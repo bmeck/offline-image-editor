@@ -1,3 +1,4 @@
+var async = require('async');
 function clearCanvas() {
    var c = document.getElementById('c');
    var ctx = c.getContext('2d');
@@ -56,17 +57,40 @@ module.exports = {
                alert('You need to save some files first!');
                return;
             }
-            files.forEach(function (file) {
+            var index = 0;
+            async.forEach(files, function (file, next) {
                var radio = document.createElement('input');
                radio.name = 'gallery-choice';
+               var id = radio.id = 'gallery-choice-' + index;
                radio.type = 'radio';
                radio.value = file;
-               var thumb = document.createElement('img');
-               thumb.src = 'pictures/'+file;
-               thumb.onclick = radio.click.bind(radio);
-               nav.appendChild(radio);
-               nav.appendChild(thumb);
-            });
+               if (index === 0) {
+                  radio.click();
+                  first = false;
+               }
+               new img(file).read(function (err, data) {
+                  var label = document.createElement('label');
+                  label.setAttribute('for', id);
+                  var image = document.createElement('img');
+                  image.onload = function () {
+                     nav.appendChild(radio);
+                     nav.appendChild(label);
+                     next();
+                  }
+                  image.onerror = function () {}
+                  var filereader = new FileReader();
+                  filereader.readAsDataURL(data);
+                  filereader.onload = function () {
+                     image.src = filereader.result.replace(/^data:;/,'data:image/png;');
+                  }
+                  img.onclick = function (e) {
+                     console.log(radio)
+                     radio.click(e);
+                  };
+                  label.appendChild(image);
+               });
+               index++;
+            },
             openDialog('gallery-dialog', function (data, form) {
                new img(form.querySelector('input:checked').value).read(function (err, data) {
                   var image = new Image();
@@ -83,6 +107,7 @@ module.exports = {
                   }
                });
             })
+            );
          });
       }
    },

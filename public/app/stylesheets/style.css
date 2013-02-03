@@ -26,11 +26,14 @@ html, body {
 #gallery-dialog {
   max-width: 80%;
 }
-#gallery-nav > input {
+#gallery-nav>input {
   -webkit-flex-wrap: wrap;
   display: none;
 }
-#gallery-nav > img {
+#gallery-nav>input:checked+label {
+  border: 0.1em solid;
+}
+#gallery-nav>label>img {
   margin: 0.5em;
   max-height: 7em;
   display: inline-block;
