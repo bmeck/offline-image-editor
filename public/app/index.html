@@ -1,0 +1,93 @@
+<!doctype html>
+
+<html manifest="app.appcache">
+  <head>
+    <meta charset="utf-8">
+    <title>Image Editor</title>
+    <link rel="stylesheet" href="stylesheets/style.css">
+  </head>
+  <body>
+    <div id="dialog-area">
+      <div id="dialog-justify">
+        
+        <form id="new-image-dialog" class="column" title="Create New Image" onsubmit="return false">
+          <label for="new-image-width">Width:</label>
+          <input id="new-image-width" type="number">
+          <label for="new-image-height">Height:</label>
+          <input id="new-image-height" type="number">
+          <div class="row">
+            <button id="new-ok" onclick="closeDialog(null)">Ok</button>
+            <button id="new-cancel" onclick="closeDialog('CANCEL')">Cancel</button>
+          </div>
+        </form>
+        
+        
+        <form id="gallery-dialog" class="column" title="Pick An Existing Image" onsubmit="return false">
+          <nav id="gallery-nav" class="row">
+            <!-- populate from server -->
+          </nav>
+          <div class="row">
+            <button id="new-ok" onclick="closeDialog(null)">Ok</button>
+            <button id="new-cancel" onclick="closeDialog('CANCEL')">Cancel</button>
+          </div>
+        </form>
+        
+        <form id="save-dialog" class="column" title="Pick An Existing Image" onsubmit="return false">
+          <label for="save-name">Save As:</label>
+          <input id="save-name" type="text">
+          <div class="row">
+            <button id="new-ok" onclick="closeDialog(null)">Ok</button>
+            <button id="new-cancel" onclick="closeDialog('CANCEL')">Cancel</button>
+          </div>
+        </form>
+        
+      </div>
+    </div>
+    <div id="header">
+      <form id="toolbar" onsubmit="return false">
+        
+        <menu id="editor-actions" type="toolbar">
+          <input id="action-new" type="button"><label for="action-new" title="New Image">
+            <img src="images/new.png">
+          </label>
+          <input id="action-gallery" type="button"><label for="action-gallery" title="Open Image">
+            <img src="images/gallery.png">
+          </label>
+          <input id="action-upload" type="file"><label for="action-upload" title="Import Image">
+            <img src="images/upload.png">
+          </label>
+          <input id="action-save" type="button"><label for="action-save" title="Save Image">
+            <img src="images/save.png">
+          </label>
+          <!-- move this to downloadify if you feel flashy, haha! -->
+          <input id="action-download" type="button"><label for="action-download" title="Download Image">
+            <img src="images/download.png">
+          </label>
+        </menu>
+        
+        
+        <menu id="editor-tools" type="toolbar">
+          <input id="tool-pen" name="tool" value="pen" type="radio"><label for="tool-pen" title="Draw Freehand">
+            <img src="images/pencil.png">
+          </label>
+        </menu>
+        
+        <!--
+        <menu id="system-actions" type="toolbar">
+          <input id="state-is-online" disabled value="online" type="radio"><label for="action-go-offline" title="Online" class="online">
+            <img src="images/online.png">
+          </label>
+          <input id="state-is-online" disabled value="offline" type="radio"><label for="action-go-online" title="Offline" class="offline">
+            <img src="images/offline.png">
+          </label>
+        </menu>
+        -->
+        
+      </form>
+    </div>
+    <div id="canvas-area">
+      <canvas id="c" width=500 height=500 style="width: 500px; height: 500px"></canvas>
+    </div>
+    <script src="javascripts/bundle.js"></script>
+  </body>
+</html>

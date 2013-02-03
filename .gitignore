@@ -1,0 +1,7 @@
+.log
+.swp
+.DS_Store
+.o
+.bak
+node_modules
+/db
