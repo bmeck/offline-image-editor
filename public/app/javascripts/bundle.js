@@ -433,7 +433,34 @@ process.binding = function (name) {
 
 });
 
-require.define("/javascripts/src/fs-image.js",function(require,module,exports,__dirname,__filename,process,global){var FSFactory = require('./browserify-fs').FSFactory;
+require.define("/javascripts/src/remove-prefix.js",function(require,module,exports,__dirname,__filename,process,global){window.URL = window.URL || window.webkitURL;
+
+});
+
+require.define("/javascripts/src/persistence.js",function(require,module,exports,__dirname,__filename,process,global){window.onload = function () {
+   var selectedTool = localStorage.getItem('selectedTool');
+   if (selectedTool) {
+      document.querySelector('input[name="tool"][value="'+selectedTool+'"]').checked = 'checked';
+   }
+   var settings = JSON.parse(localStorage.getItem('settings'));
+   if (settings) {
+      settings.forEach(function (setting) {
+         document.getElementById(setting[0]).value = setting[1];
+      })
+   }
+}
+window.onunload = function () {
+   var tool = document.querySelector('input[name="tool"]:checked');
+   localStorage.setItem('selectedTool', tool.value);
+   var settingsElements = [].slice.call(document.querySelectorAll('input[id^="setting-"]'));
+   var settings = settingsElements.map(function (elem) {
+      return [elem.id, elem.value];
+   })
+   localStorage.setItem('settings', JSON.stringify(settings));
+}
+});
+
+require.define("/javascripts/src/image-implementation/fs.js",function(require,module,exports,__dirname,__filename,process,global){var FSFactory = require('./browserify-fs').FSFactory;
 var path = require('path')
 exports.createImageImplementation = function (dir, cb) {
    //
@@ -478,7 +505,7 @@ exports.createImageImplementation = function (dir, cb) {
 }
 });
 
-require.define("/javascripts/src/browserify-fs.js",function(require,module,exports,__dirname,__filename,process,global){/**
+require.define("/javascripts/src/image-implementation/browserify-fs.js",function(require,module,exports,__dirname,__filename,process,global){/**
   fs.js (c) OptimalBits 2012.
   
   A lightweight wrapper for the File System API inspired in nodejs fs module.
@@ -918,7 +945,49 @@ require.define("/javascripts/src/browserify-fs.js",function(require,module,expor
 
 });
 
-require.define("/javascripts/src/events.js",function(require,module,exports,__dirname,__filename,process,global){var async = require('async');
+require.define("/javascripts/src/events.js",function(require,module,exports,__dirname,__filename,process,global){module.exports = {
+   'action-new': {
+      'click': require('./actions/new')
+   },
+   'action-gallery': {
+      'click': require('./actions/open')
+   },
+   'action-save': {
+      'click': require('./actions/save')
+   },
+   'action-upload': {
+      'change': require('./actions/import')
+   },
+   'action-download': {
+      'click': require('./actions/download')
+   }
+};
+Object.keys(module.exports).forEach(function (id) {
+   var elem = document.getElementById(id);
+   if (elem) Object.keys(module.exports[id]).forEach(function (event) {
+      elem.addEventListener(event, module.exports[id][event]);
+   });
+});
+});
+
+require.define("/javascripts/src/actions/new.js",function(require,module,exports,__dirname,__filename,process,global){var canvasUtils = require('../common/canvas');
+module.exports = function (e) {
+   openDialog('new-image-dialog', function (err, form) {
+      if (err) {
+         if (err != 'CANCEL') alert(err);
+      }
+      else {
+         var width = document.getElementById('new-image-width').value;
+         var height = document.getElementById('new-image-height').value;
+         canvasUtils.newCanvas(width, height);
+      }
+   });
+}
+});
+
+require.define("/javascripts/src/common/canvas.js",function(require,module,exports,__dirname,__filename,process,global){exports.clearCanvas = clearCanvas;
+exports.newCanvas = newCanvas;
+exports.fromImage = fromImage;
 function clearCanvas() {
    var c = document.getElementById('c');
    var ctx = c.getContext('2d');
@@ -935,166 +1004,85 @@ function newCanvas(width, height) {
    c.style.height = height + 'px';
    clearCanvas();
 }
-window.onload = function () {
-   var selectedTool = localStorage.getItem('selectedTool');
-   if (selectedTool) {
-      document.querySelector('input[name="tool"][value="'+selectedTool+'"]').checked = 'checked';
-   }
-   var settings = JSON.parse(localStorage.getItem('settings'));
-   if (settings) {
-      settings.forEach(function (setting) {
-         document.getElementById(setting[0]).value = setting[1];
-      })
-   }
+function fromImage(image) {
+   newCanvas(image.naturalWidth, image.naturalHeight);
+   var c = document.getElementById('c');
+   c.getContext('2d').drawImage(image, 0, 0)
 }
-window.onunload = function () {
-   var tool = document.querySelector('input[name="tool"]:checked');
-   localStorage.setItem('selectedTool', tool.value);
-   var settingsElements = [].slice.call(document.querySelectorAll('input[id^="setting-"]'));
-   var settings = settingsElements.map(function (elem) {
-      return [elem.id, elem.value];
-   })
-   localStorage.setItem('settings', JSON.stringify(settings));
-}
-function dataURItoBlob(dataURI) {
-    // convert base64 to raw binary data held in a string
-    // doesn't handle URLEncoded DataURIs - see SO answer #6850276 for code that does this
-    var byteString = atob(dataURI.split(',')[1]);
+});
 
-    // separate out the mime component
-    var mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0]
-
-    // write the bytes of the string to an ArrayBuffer
-    var ab = new ArrayBuffer(byteString.length);
-    var ia = new Uint8Array(ab);
-    for (var i = 0; i < byteString.length; i++) {
-        ia[i] = byteString.charCodeAt(i);
-    }
-
-    // write the ArrayBuffer to a blob, and you're done
-    return new Blob([ab], {type:mimeString});
-}
-module.exports = {
-   'action-new': {
-      'click': function (e) {
-         openDialog('new-image-dialog', function (err, form) {
-            if (err) {
-               if (err != 'CANCEL') alert(err);
-            }
-            else {
-               var width = document.getElementById('new-image-width').value;
-               var height = document.getElementById('new-image-height').value;
-               newCanvas(width, height);
-            }
-         });
+require.define("/javascripts/src/actions/open.js",function(require,module,exports,__dirname,__filename,process,global){var async = require('async');
+var canvasUtils = require('../common/canvas');
+module.exports = function (e) {
+   var nav = document.getElementById('gallery-nav');
+   while(nav.childNodes.length) nav.removeChild(nav.firstChild);
+   EditorImage.list(function (err, files) {
+      if (!files || !files.length) {
+         alert('You need to save some files first!');
+         return;
       }
-   },
-   'action-gallery': {
-      'click': function (e) {
-         var nav = document.getElementById('gallery-nav');
-         while(nav.childNodes.length) nav.removeChild(nav.firstChild);
-         img.list(function (err, files) {
-            if (!files || !files.length) {
-               alert('You need to save some files first!');
-               return;
-            }
-            var index = 0;
-            async.forEach(files, function (file, next) {
-               var radio = document.createElement('input');
-               radio.name = 'gallery-choice';
-               var id = radio.id = 'gallery-choice-' + index;
-               radio.type = 'radio';
-               radio.value = file;
-               if (index === 0) {
-                  radio.click();
-                  first = false;
-               }
-               var container = document.createElement('span');
-               nav.appendChild(container);
-               new img(file).read(function (err, data) {
-                  var label = document.createElement('label');
-                  label.title = file;
-                  label.setAttribute('for', id);
-                  var image = document.createElement('img');
-                  image.onload = function () {
-                     container.appendChild(radio);
-                     container.appendChild(label);
-                     next();
-                  }
-                  image.onerror = function () {}
-                  var filereader = new FileReader();
-                  filereader.readAsDataURL(data);
-                  filereader.onload = function () {
-                     image.src = filereader.result.replace(/^data:;/,'data:image/png;');
-                  }
-                  img.onclick = function (e) {
-                     console.log(radio)
-                     radio.click(e);
-                  };
-                  label.appendChild(image);
-               });
-               index++;
-            },
-            openDialog('gallery-dialog', function (data, form) {
-               var filename = form.querySelector('input:checked').value;
-               new img(filename).read(function (err, data) {
-                  var image = new Image();
-                  image.onload = function () {
-                     document.getElementById('save-name').value = filename;
-                     newCanvas(image.naturalWidth, image.naturalHeight);
-                     var c = document.getElementById('c');
-                     c.getContext('2d').drawImage(image, 0, 0);
-                  }
-                  image.onerror = function () {}
-                  var filereader = new FileReader();
-                  filereader.readAsDataURL(data);
-                  filereader.onload = function () {
-                     image.src = filereader.result.replace(/^data:;/,'data:image/png;');
-                  }
-               });
-            })
-            );
-         });
-      }
-   },
-   'action-save': {
-      'click': function (e) {
-         var datauri = document.getElementById('c').toDataURL('image/png;base64')
-         var blob = dataURItoBlob(datauri);
-         openDialog('save-dialog', function (data, form) {
-            new img(form.querySelector('input[type=text]').value).write(blob, function (err) {
-               console.log(arguments);
-            });
-         });
-      }
-   },
-   'action-upload': {
-      'change': function (e) {
-         var files = document.getElementById('action-upload').files;
-         var file = files && files[0];
-         if (file) {
-            var blob = file.slice();
-            var dataURI = webkitURL.createObjectURL(blob);
-            var img = new Image();
-            img.src = dataURI;
-            img.onload = function () {
-               newCanvas(img.naturalWidth, img.naturalHeight);
-               var c = document.getElementById('c');
-               var ctx = c.getContext('2d');
-               ctx.drawImage(img, 0, 0)
-            }
-            img.onerror = function () {
-               alert('Unable to load image ' + file.name);
-            }
+      var index = 0;
+      async.forEach(files, function (file, next) {
+         var radio = document.createElement('input');
+         radio.name = 'gallery-choice';
+         var id = radio.id = 'gallery-choice-' + index;
+         radio.type = 'radio';
+         radio.value = file;
+         if (index === 0) {
+            radio.click();
+            first = false;
          }
-      }
-   },
-   'action-download': {
-      'click': function (e) {
-         window.open(document.getElementById('c').toDataURL());
-      }
-   }
-};
+         var container = document.createElement('span');
+         nav.appendChild(container);
+         new EditorImage(file).read(function (err, data) {
+            var label = document.createElement('label');
+            label.title = file;
+            label.setAttribute('for', id);
+            var image = document.createElement('img');
+            image.onload = function () {
+               container.appendChild(radio);
+               container.appendChild(label);
+               next();
+            }
+            image.onerror = function () {}
+            var filereader = new FileReader();
+            filereader.readAsDataURL(data);
+            filereader.onload = function () {
+               image.src = filereader.result.replace(/^data:;/,'data:image/png;');
+            }
+            EditorImage.onclick = function (e) {
+               console.log(radio)
+               radio.click(e);
+            };
+            label.appendChild(image);
+         });
+         index++;
+      },
+      openDialog('gallery-dialog', function (err, form) {
+         if (err) {
+            if (err != 'CANCEL') {
+               alert(err);
+            }
+            return;
+         }
+         var filename = form.querySelector('input:checked').value;
+         new EditorImage(filename).read(function (err, data) {
+            var image = new Image();
+            image.onload = function () {
+               document.getElementById('save-name').value = filename;
+               canvasUtils.fromImage(image);
+            }
+            image.onerror = function () {}
+            var filereader = new FileReader();
+            filereader.readAsDataURL(data);
+            filereader.onload = function () {
+               image.src = filereader.result.replace(/^data:;/,'data:image/png;');
+            }
+         });
+      })
+      );
+   });
+}
 });
 
 require.define("/node_modules/async/package.json",function(require,module,exports,__dirname,__filename,process,global){module.exports = {"main":"./index"}
@@ -1801,89 +1789,70 @@ require.define("/node_modules/async/lib/async.js",function(require,module,export
 
 });
 
-require.define("/javascripts/src/editor-tools.js",function(require,module,exports,__dirname,__filename,process,global){module.exports = {
+require.define("/javascripts/src/actions/save.js",function(require,module,exports,__dirname,__filename,process,global){var commonUtils = require('../common/util');
+module.exports = function (e) {
+   var datauri = document.getElementById('c').toDataURL('image/png;base64')
+   var blob = commonUtils.dataURItoBlob(datauri);
+   openDialog('save-dialog', function (data, form) {
+      new EditorImage(form.querySelector('input[type=text]').value).write(blob, function (err) {
+      });
+   });
+}
+});
+
+require.define("/javascripts/src/common/util.js",function(require,module,exports,__dirname,__filename,process,global){exports.dataURItoBlob = function dataURItoBlob(dataURI) {
+    // convert base64 to raw binary data held in a string
+    // doesn't handle URLEncoded DataURIs - see SO answer #6850276 for code that does this
+    var byteString = atob(dataURI.split(',')[1]);
+
+    // separate out the mime component
+    var mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0]
+
+    // write the bytes of the string to an ArrayBuffer
+    var ab = new ArrayBuffer(byteString.length);
+    var ia = new Uint8Array(ab);
+    for (var i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+    }
+
+    // write the ArrayBuffer to a blob, and you're done
+    return new Blob([ab], {type:mimeString});
+}
+});
+
+require.define("/javascripts/src/actions/import.js",function(require,module,exports,__dirname,__filename,process,global){var canvasUtils = require('../common/canvas');
+module.exports = function (e) {
+   var files = document.getElementById('action-upload').files;
+   var file = files && files[0];
+   if (file) {
+      var blob = file.slice();
+      var dataURI = URL.createObjectURL(blob);
+      var importedImage = new Image();
+      importedImage.src = dataURI;
+      importedImage.onload = function () {
+         canvasUtils.fromImage(importedImage)
+      }
+      importedImage.onerror = function () {
+         alert('Unable to load image ' + file.name);
+      }
+   }
+}
+});
+
+require.define("/javascripts/src/actions/download.js",function(require,module,exports,__dirname,__filename,process,global){module.exports = function (e) {
+   window.open(document.getElementById('c').toDataURL(), '_blank');
+}
+});
+
+require.define("/javascripts/src/tooling.js",function(require,module,exports,__dirname,__filename,process,global){module.exports = {
    pen: require('./tools/pen'),
    eyedropper: require('./tools/eyedropper')
 }
-});
-
-require.define("/javascripts/src/tools/pen.js",function(require,module,exports,__dirname,__filename,process,global){module.exports = function (e) {
-   var c = e.target;
-   var ctx = c.getContext('2d');
-   ctx.fillStyle = document.getElementById('setting-color').value;
-   ctx.fillRect(e.clientX - c.offsetLeft - 5, e.clientY - c.offsetTop - 5, 10, 10);
-}
-});
-
-require.define("/javascripts/src/tools/eyedropper.js",function(require,module,exports,__dirname,__filename,process,global){module.exports = function (e) {
-   var c = e.target;
-   var ctx = c.getContext('2d');
-   var rgba = ctx.getImageData(e.clientX - c.offsetLeft, e.clientY - c.offsetTop, 1, 1);
-   var color = '#' + ([].slice.call(rgba.data).map(function (chan) {
-      return chan < 16 ? '0' + chan.toString(16) : chan.toString(16);
-   }).join('')).slice(0,-2);
-   document.getElementById('setting-color').value = color
-}
-});
-
-require.define("/javascripts/src/main.js",function(require,module,exports,__dirname,__filename,process,global){require('./fs-image').createImageImplementation('pictures', function (err, imageImplementation) {
-   var Image = window.img = imageImplementation;
-});
-
-//
-// Hook up the events
-//
-var eventsByIdAndName = require('./events');
-Object.keys(eventsByIdAndName).forEach(function (id) {
-   var elem = document.getElementById(id);
-   if (elem) Object.keys(eventsByIdAndName[id]).forEach(function (event) {
-      elem.addEventListener(event, eventsByIdAndName[id][event]);
-   });
-});
-
-//
-// Keep up to date with online status. (do not rely on this)
-//
-function setOnlineStatus(isOnline) {
-   document.body.classList.add(isOnline ? 'online' : 'offline');
-   document.body.classList.remove(isOnline ? 'offline' : 'online');
-}
-setOnlineStatus(navigator.onLine);
-window.addEventListener('online', setOnlineStatus);
-window.addEventListener('offline', setOnlineStatus);
-
-;(function () {
-   var currentDialog;
-   var currentCallback;
-   window.openDialog = function openDialog(id, callback) {
-      var dialog = document.getElementById(id);
-      if (!dialog) {
-         callback(new Error('Dialog not found'));
-         return;
-      }
-      currentDialog = dialog;
-      [].slice.call(document.querySelectorAll('#dialog-justify>[aria-active]')).forEach(function (activeDialog) {
-         activeDialog.removeAttribute('aria-active');
-      });
-      document.getElementById('dialog-area').setAttribute('aria-active', 'true');
-      dialog.setAttribute('aria-active', 'true');
-      if (typeof callback === 'function') currentCallback = callback;
-   }
-   window.closeDialog = function closeDialog(err) {
-      document.getElementById('dialog-area').removeAttribute('aria-active');
-      if (currentCallback) {
-         var callback = currentCallback;
-         var form = currentDialog;
-         currentCallback = currentDialog = null;
-         callback(err, form);
-      }
-   }
-})();
 
 function fireTool(e) {
    var elem = document.querySelector('#editor-tools > input:checked');
    if (elem) {
-      require('./editor-tools')[elem.value](e);
+      module.exports[elem.value](e);
    }
 }
 
@@ -1912,6 +1881,63 @@ function fireTool(e) {
    canvas.addEventListener('mouseover', function (e) {
       if (dragTimeout) clearTimeout(dragTimeout);
    });
+})();
+});
+
+require.define("/javascripts/src/tools/pen.js",function(require,module,exports,__dirname,__filename,process,global){module.exports = function (e) {
+   var c = e.target;
+   var ctx = c.getContext('2d');
+   ctx.fillStyle = document.getElementById('setting-color').value;
+   ctx.fillRect(e.clientX - c.offsetLeft - 5, e.clientY - c.offsetTop - 5, 10, 10);
+}
+});
+
+require.define("/javascripts/src/tools/eyedropper.js",function(require,module,exports,__dirname,__filename,process,global){module.exports = function (e) {
+   var c = e.target;
+   var ctx = c.getContext('2d');
+   var rgba = ctx.getImageData(e.clientX - c.offsetLeft, e.clientY - c.offsetTop, 1, 1);
+   var color = '#' + ([].slice.call(rgba.data).map(function (chan) {
+      return chan < 16 ? '0' + chan.toString(16) : chan.toString(16);
+   }).join('')).slice(0,-2);
+   document.getElementById('setting-color').value = color
+}
+});
+
+require.define("/javascripts/src/main.js",function(require,module,exports,__dirname,__filename,process,global){
+require('./remove-prefix.js');
+require('./persistence');
+require('./image-implementation/fs').createImageImplementation('pictures', function (err, imageImplementation) {
+   window.EditorImage = imageImplementation;
+});
+require('./events');
+require('./tooling');
+
+;(function () {
+   var currentDialog;
+   var currentCallback;
+   window.openDialog = function openDialog(id, callback) {
+      var dialog = document.getElementById(id);
+      if (!dialog) {
+         callback(new Error('Dialog not found'));
+         return;
+      }
+      currentDialog = dialog;
+      [].slice.call(document.querySelectorAll('#dialog-justify>[aria-active]')).forEach(function (activeDialog) {
+         activeDialog.removeAttribute('aria-active');
+      });
+      document.getElementById('dialog-area').setAttribute('aria-active', 'true');
+      dialog.setAttribute('aria-active', 'true');
+      if (typeof callback === 'function') currentCallback = callback;
+   }
+   window.closeDialog = function closeDialog(err) {
+      document.getElementById('dialog-area').removeAttribute('aria-active');
+      if (currentCallback) {
+         var callback = currentCallback;
+         var form = currentDialog;
+         currentCallback = currentDialog = null;
+         callback(err, form);
+      }
+   }
 })();
 
 });

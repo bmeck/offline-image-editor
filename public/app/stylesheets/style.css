@@ -172,6 +172,7 @@ button, #header input+label {
   -webkit-justify-content: center;
 }
 canvas {
-  background: white;
+  border: 1px solid;
+  background: transparent;
   margin: 0 auto;
 }
