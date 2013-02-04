@@ -130,6 +130,7 @@ menu {
 }
 #header input {
   display: none;
+  vertical-align: middle;
 }
 button, #header input+label {
   font-family: Arial, sans-serif;
@@ -160,7 +161,7 @@ button, #header input+label {
 #editor-actions, #system-actions {
   -webkit-flex-grow: 0;
 }
-#editor-tools {
+#editor-settings {
   -webkit-flex-grow: 1;
 }
 #canvas-area {

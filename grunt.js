@@ -1,3 +1,4 @@
+
 module.exports = function(grunt) {
 
   // Project configuration.
@@ -24,9 +25,11 @@ module.exports = function(grunt) {
       }
     },
     browserify: {
-      'public/app/javascripts/bundle.js': [
-        'public/app/javascripts/src/main.js'
-      ]
+      'public/app/javascripts/bundle.js': {
+        src: [
+          'public/app/javascripts/src/main.js'
+        ]
+      }
     }
   });
 
